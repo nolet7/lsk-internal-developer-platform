@@ -1,0 +1,68 @@
+name: AKS Kubernetes environment plan and apply
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options: [dev, staging, prod]
+      apply:
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: aks-${{ github.repository }}-${{ inputs.environment }}
+  cancel-in-progress: false
+jobs:
+  cluster:
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/feature/azure' }}
+    environment: azure-${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.11.0'
+      - name: Init isolated Azure Blob Kubernetes state
+        env:
+          ARM_USE_OIDC: 'true'
+          ARM_USE_AZUREAD: 'true'
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          terraform -chdir=infra/kubernetes init -input=false             -backend-config="resource_group_name=${{ vars.AZURE_STATE_RESOURCE_GROUP }}"             -backend-config="storage_account_name=${{ vars.AZURE_STATE_STORAGE_ACCOUNT }}"             -backend-config="container_name=${{ vars.AZURE_STATE_CONTAINER }}"             -backend-config="key=lsk-${{ github.event.repository.name }}-aks-${{ inputs.environment }}.tfstate"             -backend-config="use_azuread_auth=true"
+      - name: Validate
+        run: terraform -chdir=infra/kubernetes validate -no-color
+      - name: Plan private AKS
+        env:
+          TF_VAR_subscription_id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_service_name: ${{ vars.LSK_SERVICE_NAME }}
+          TF_VAR_admin_group_object_ids: ${{ vars.AKS_ADMIN_GROUP_IDS_JSON }}
+          SELECTED_LOCATION: ${{ vars.AZURE_LOCATION }}
+          ARM_USE_OIDC: 'true'
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          : "${TF_VAR_service_name:?LSK_SERVICE_NAME missing}"
+          : "${TF_VAR_admin_group_object_ids:?AKS_ADMIN_GROUP_IDS_JSON missing}"
+          terraform -chdir=infra/kubernetes plan -input=false             -var-file="../../environments/kubernetes/${{ inputs.environment }}.tfvars"             -var="location=$SELECTED_LOCATION"             -out=release.tfplan
+      - name: Apply approved AKS plan
+        if: ${{ inputs.apply }}
+        env:
+          ARM_USE_OIDC: 'true'
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: terraform -chdir=infra/kubernetes apply -input=false release.tfplan
