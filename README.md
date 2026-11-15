@@ -1,6 +1,6 @@
 # LSK Internal Developer Platform
 
-**Independent, fictional corporate IT lab built for Senior AI Platform Engineer interviews.** This is not evidence of an ASR Group or Chromalloy production deployment.
+**Independent, fictional corporate IT lab built for Senior AI Platform Engineer interviews.** This is not evidence of an LSK or LSK production deployment.
 
 [![CI](https://github.com/nolet7/lsk-internal-developer-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/nolet7/lsk-internal-developer-platform/actions/workflows/ci.yml)
 
@@ -198,3 +198,7 @@ Dashed connections are **planned steps**, not functional components. In particul
 - A catalog advisory model not configured returns 503, model failure returns 502; the normal platform workflow does not depend on the AI model.
 - The in-code catalog is not yet versioned as independent template packages; there is no provisioning lifecycle/status callback, auto-expiry, cost quota, or drift reconciliation.
 
+
+## Brixton JD alignment
+
+Read [skill coverage and production readiness gaps](docs/JD_ALIGNMENT.md). The enterprise examples are fictional LSK portfolio workloads; they are not historical employer production deployments.

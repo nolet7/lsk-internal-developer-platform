@@ -9,7 +9,7 @@
 7. Discuss which actions an AI agent can safely advise on vs actions that require deterministic policy and explicit approval.
 
 ## Honest answers
-- **Did you deploy this at Chromalloy?** No. It is an independently built fictional corporate IT portfolio scenario.
+- **Did you deploy this at LSK?** No. It is an independently built fictional corporate IT portfolio scenario.
 - **Does the API provision Cloud Run services?** No. It outputs a constrained handoff artifact; the provisioning pipeline is a planned integration.
 - **Why does this qualify as a platform engineering demonstration?** It demonstrates a discoverable catalog, secure requests, auditability, golden paths, team ownership and separation of control-plane operations.
 - **What remains for enterprise production?** More policy enforcement, migrations, compliance controls, operational testing, real GitOps PR integration and a hardening review.

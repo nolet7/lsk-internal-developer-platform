@@ -26,7 +26,7 @@ Cloud Run IAM determines who can invoke the service. The app separately validate
 - Cloud SQL vs SQLite: transactional persistence and row-level locking; use PostgreSQL production behavior, not SQLite, for final concurrency tests.
 - API produces reviewed GitOps plans rather than creating resources directly. The real infrastructure provisioning step is a separately governed integration.
 - Golden paths are versioned catalog entries. The next release should move these into schema-validated repository templates, with security policy tests and protected PR generation.
-- No LLM is connected. Optional AI assistant may recommend templates and explain review failures but must not approve, change IAM, or apply Terraform.
+- An optional read-only Gemini catalog advisory is implemented; it is not an operations agent and cannot approve, change IAM, or apply Terraform.
 
 ## Production gaps
 Alembic migrations, provisioning adapter, OPA/Conftest, richer audit log integrity, cost controls, network policy validation, DB HA/restore drills, full OIDC end-to-end tests, multi-region failover, SLO telemetry, realistic load and concurrency testing, fine-grained service ownership and rate limiting.
