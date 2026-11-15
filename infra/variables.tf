@@ -39,3 +39,9 @@ variable "genai_model" {
   type        = string
   description = "Explicit approved Vertex Gemini model ID"
 }
+
+variable "ops_allowed_services" {
+  type        = string
+  default     = ""
+  description = "Comma-separated allowlist for privileged Cloud Run log triage. Keep empty to disable."
+}
