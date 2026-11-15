@@ -226,3 +226,10 @@ This repository now uses **versioned Alembic migrations**, not `Base.metadata.cr
 ## Private regional database connectivity
 
 An opt-in [private Amazon RDS PostgreSQL + Direct VPC egress deployment](docs/PRIVATE_DATABASE_NETWORK.md) is available. Set `enable_private_sql=true` with a reviewed non-overlapping subnet CIDR. A `prod` Terraform plan now **requires** private SQL, REGIONAL HA and a non-micro Amazon RDS PostgreSQL tier. This is still a lab reference until a real AWS plan/apply, approved security review, failover test and backup restore have been completed.
+
+
+## Optional private Amazon EKS Kubernetes infrastructure
+
+This AWS branch includes a [reusable EKS Terraform cluster module](docs/KUBERNETES_INFRASTRUCTURE.md) under `modules/eks/`, instantiated from `infra/kubernetes/` using `environments/kubernetes/{dev,staging,prod}.tfvars`. It provides isolated VPC/subnets, private Kubernetes API endpoint, NAT egress, managed node groups, explicit IAM API access, and control-plane audit logs. A dedicated **EKS Kubernetes environment plan and apply** workflow operates with AWS workload identity and a separate S3 state key for each protected environment.
+
+**The existing ECS Fargate application stack remains unchanged.** Provisioning an EKS cluster does not deploy the business API, install IRSA/Pod Identity add-ons, wire private ingress, establish application secrets, or implement GitOps. Those release responsibilities require a separate Helm/Argo CD pipeline and live network/security testing. CI validated the Terraform module; no EKS infrastructure has been applied to an AWS account.
