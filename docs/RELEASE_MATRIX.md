@@ -21,3 +21,7 @@ Branch `main`; `environments/gcp/dev.tfvars`, `staging.tfvars`, `prod.tfvars`. D
 7. Run live SLO monitoring, tenant/region rejection checks and real recovery tests before allowing business traffic.
 
 **Limitations:** The workflow does not create or enforce GitHub environment reviewer rules; admin must configure them. Initial deployment needs registry/DB bootstrap, and app rollout vs schema migration sequencing still requires the controlled two-phase release. A CI pass does not verify cloud quota, private DNS, IAM access, backup restore or compliance status. No cloud resources were deployed by code commits.
+
+## Container publishing identity and image promotion
+
+The GCP `build-image.yml` workflow now uses the protected `gcp-<environment>` GitHub environment, OIDC federation and dedicated `GCP_PUBLISH_SERVICE_ACCOUNT` variable to push an immutable `api:<commit-sha>` image with requested SBOM/provenance attestations. Configure `GCP_ARTIFACT_REPOSITORY` and `GCP_PROJECT_ID` alongside this identity. The workflow prints the `@sha256` digest for the exact deployable image. Use that same digest for staging and production promotion; do not use `:latest` or mutable tags. Runtime access, deployment permission and registry publishing should use separate least-privilege identities.
