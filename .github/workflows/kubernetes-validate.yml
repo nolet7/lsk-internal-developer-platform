@@ -1,0 +1,27 @@
+name: GKE Kubernetes module validation
+on:
+  push:
+    branches: [main]
+    paths: ['infra/kubernetes/**', 'modules/gke/**', 'environments/kubernetes/**', '.github/workflows/kubernetes-validate.yml']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.0"
+      - run: terraform -chdir=infra/kubernetes fmt -check -recursive
+      - run: terraform -chdir=infra/kubernetes init -backend=false -input=false
+      - run: terraform -chdir=infra/kubernetes validate -no-color
+      - name: Validate all environment profiles
+        run: |
+          for env in dev staging prod; do
+            terraform -chdir=infra/kubernetes validate -no-color
+            test -s "environments/kubernetes/$env.tfvars"
+          done
