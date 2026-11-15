@@ -45,6 +45,18 @@ jobs:
           IMAGE: ${{ inputs.image_digest }}
         run: |
           [[ "$IMAGE" =~ @sha256:[0-9a-f]{64}$ ]] || { echo 'Digest must be immutable'; exit 1; }
+      - name: Approved migration and staging promotion gate
+        if: ${{ inputs.apply }}
+        env:
+          IMAGE_DIGEST: ${{ inputs.image_digest }}
+          MIGRATION_VERIFIED_DIGEST: ${{ vars.MIGRATION_VERIFIED_DIGEST }}
+          STAGING_VERIFIED_DIGEST: ${{ vars.STAGING_VERIFIED_DIGEST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          [[ -n "$MIGRATION_VERIFIED_DIGEST" && "$IMAGE_DIGEST" == "$MIGRATION_VERIFIED_DIGEST" ]] || { echo "Migration approval missing for exact image"; exit 1; }
+          if [[ "$ENVIRONMENT" == "prod" ]]; then
+            [[ -n "$STAGING_VERIFIED_DIGEST" && "$IMAGE_DIGEST" == "$STAGING_VERIFIED_DIGEST" ]] || { echo "Production requires same image verified in staging"; exit 1; }
+          fi
       - name: Plan
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
