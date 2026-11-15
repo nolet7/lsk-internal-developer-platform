@@ -104,6 +104,8 @@ def get_principal(credentials: HTTPAuthorizationCredentials | None = Depends(bea
     tenant = claims.get("tenant_id")
     if not isinstance(tenant, str) or not tenant:
         raise HTTPException(403, "Tenant claim required")
+    from app.regional_policy import enforce_residency
+    enforce_residency(claims, tenant)
     scopes = claims.get("scope", "")
     return Principal(claims["sub"], tenant, frozenset(scopes.split() if isinstance(scopes, str) else []))
 
