@@ -64,6 +64,18 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
         run: |
           terraform -chdir=infra/azure init -input=false             -backend-config="resource_group_name=${{ vars.AZURE_STATE_RESOURCE_GROUP }}"             -backend-config="storage_account_name=${{ vars.AZURE_STATE_STORAGE_ACCOUNT }}"             -backend-config="container_name=${{ vars.AZURE_STATE_CONTAINER }}"             -backend-config="key=lsk-${{ github.event.repository.name }}-${{ inputs.environment }}.tfstate"             -backend-config="use_azuread_auth=true"
+      - name: Approved migration and staging promotion gate
+        if: ${{ inputs.apply }}
+        env:
+          IMAGE_DIGEST: ${{ inputs.image_digest }}
+          MIGRATION_VERIFIED_DIGEST: ${{ vars.MIGRATION_VERIFIED_DIGEST }}
+          STAGING_VERIFIED_DIGEST: ${{ vars.STAGING_VERIFIED_DIGEST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          [[ -n "$MIGRATION_VERIFIED_DIGEST" && "$IMAGE_DIGEST" == "$MIGRATION_VERIFIED_DIGEST" ]] || { echo "Migration approval missing for exact image"; exit 1; }
+          if [[ "$ENVIRONMENT" == "prod" ]]; then
+            [[ -n "$STAGING_VERIFIED_DIGEST" && "$IMAGE_DIGEST" == "$STAGING_VERIFIED_DIGEST" ]] || { echo "Production requires same image verified in staging"; exit 1; }
+          fi
       - name: Plan Container Apps and private PostgreSQL
         env:
           ARM_USE_OIDC: "true"
