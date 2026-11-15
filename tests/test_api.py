@@ -116,3 +116,31 @@ def test_ai_advisory_is_read_only_and_catalog_scoped(lab, monkeypatch):
     assert result.json()["authoritative"] is False
     assert client.get("/v1/ai/catalog-advisory/not-a-template", headers=allowed).status_code == 404
     assert client.get("/v1/ai/catalog-advisory/cloud-run-api").status_code == 401
+
+def test_operations_triage_scoped_and_read_only(lab, monkeypatch):
+    from app import ops
+    client, auth = lab
+    monkeypatch.setattr(ops, "evidence_for_cloud_run", lambda name: {
+        "service": name, "time_window_minutes": 60, "error_entries_sampled": 2,
+        "sample_truncated": False, "raw_log_payloads_shared": False
+    })
+    monkeypatch.setattr(ops, "advise", lambda evidence: "Investigate recent deployments.")
+    user = auth("user", "tenant", ["catalog:read"])
+    operator = auth("operator", "tenant", ["platform:ops:read"])
+    path = "/v1/ops/cloud-run/lsk-lab-api/triage"
+    assert client.get(path, headers=user).status_code == 403
+    result = client.get(path, headers=operator)
+    assert result.status_code == 200
+    assert result.json()["read_only"] is True
+    assert result.json()["remediation_performed"] is False
+    assert result.json()["evidence"]["raw_log_payloads_shared"] is False
+
+def test_ops_requires_admin_service_allowlist(monkeypatch):
+    from app.ops import evidence_for_cloud_run
+    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "synthetic-lsk-lab")
+    monkeypatch.setenv("LSK_OPS_ALLOWED_SERVICES", "lsk-lab-api")
+    import pytest
+    from fastapi import HTTPException
+    with pytest.raises(HTTPException) as exc:
+        evidence_for_cloud_run("other-service")
+    assert exc.value.status_code == 403
