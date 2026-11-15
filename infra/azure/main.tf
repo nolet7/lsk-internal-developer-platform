@@ -166,6 +166,22 @@ resource "azurerm_container_app" "api" {
         secret_name = "database-url"
       }
       env {
+        name = "AZURE_OPENAI_ENDPOINT"
+        value = var.azure_openai_endpoint
+      }
+      env {
+        name = "AZURE_OPENAI_DEPLOYMENT"
+        value = var.azure_openai_deployment
+      }
+      env {
+        name = "LSK_OPS_ALLOWED_SERVICES"
+        value = local.name
+      }
+      env {
+        name = "LSK_AZURE_WORKSPACE_ID"
+        value = azurerm_log_analytics_workspace.app.workspace_id
+      }
+      env {
         name = "OIDC_ISSUER"
         value = var.oidc_issuer
       }

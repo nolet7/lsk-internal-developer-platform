@@ -83,6 +83,9 @@ jobs:
           TF_VAR_oidc_jwks_url: ${{ vars.OIDC_JWKS_URL }}
           TF_VAR_tenant_region_policy: ${{ vars.TENANT_REGION_POLICY_JSON }}
           TF_VAR_db_admin_password: ${{ secrets.DB_ADMIN_PASSWORD }}
+          TF_VAR_azure_openai_endpoint: ${{ vars.AZURE_OPENAI_ENDPOINT }}
+          TF_VAR_azure_openai_deployment: ${{ vars.AZURE_OPENAI_DEPLOYMENT }}
+          TF_VAR_azure_ai_resource_id: ${{ vars.AZURE_AI_RESOURCE_ID }}
         run: terraform -chdir=infra/azure plan -input=false -out=release.tfplan -var-file="../../environments/azure/${{ inputs.environment }}.tfvars"
       - name: Apply reviewed environment plan
         if: ${{ inputs.apply }}
@@ -104,4 +107,7 @@ jobs:
           TF_VAR_oidc_jwks_url: ${{ vars.OIDC_JWKS_URL }}
           TF_VAR_tenant_region_policy: ${{ vars.TENANT_REGION_POLICY_JSON }}
           TF_VAR_db_admin_password: ${{ secrets.DB_ADMIN_PASSWORD }}
+          TF_VAR_azure_openai_endpoint: ${{ vars.AZURE_OPENAI_ENDPOINT }}
+          TF_VAR_azure_openai_deployment: ${{ vars.AZURE_OPENAI_DEPLOYMENT }}
+          TF_VAR_azure_ai_resource_id: ${{ vars.AZURE_AI_RESOURCE_ID }}
         run: terraform -chdir=infra/azure apply -input=false release.tfplan

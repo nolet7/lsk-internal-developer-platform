@@ -64,3 +64,13 @@ variable "enable_zone_redundancy" {
   type = bool
   default = false
 }
+
+variable "azure_openai_endpoint" {
+  type = string
+}
+variable "azure_openai_deployment" {
+  type = string
+}
+variable "azure_ai_resource_id" {
+  type = string
+}
