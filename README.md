@@ -226,3 +226,10 @@ This repository now uses **versioned Alembic migrations**, not `Base.metadata.cr
 ## Private regional database connectivity
 
 An opt-in [private Azure PostgreSQL Flexible Server + Direct VPC egress deployment](docs/PRIVATE_DATABASE_NETWORK.md) is available. Set `enable_private_sql=true` with a reviewed non-overlapping subnet CIDR. A `prod` Terraform plan now **requires** private SQL, REGIONAL HA and a non-micro Azure PostgreSQL Flexible Server tier. This is still a lab reference until a real Azure plan/apply, approved security review, failover test and backup restore have been completed.
+
+
+## Optional private Azure AKS Kubernetes infrastructure
+
+The branch includes a reusable [AKS Terraform module and operating guide](docs/KUBERNETES_INFRASTRUCTURE.md) under `modules/aks/`, instantiated by `infra/kubernetes/` with `environments/kubernetes/{dev,staging,prod}.tfvars`. It creates private AKS API networking, an isolated VNet/node subnet and NAT, Microsoft Entra RBAC, Azure Workload Identity, Azure Policy, Cilium network policy, cluster monitoring, and an autoscaling system node pool. The dedicated **AKS Kubernetes environment plan and apply** workflow uses protected Azure environments and independent Azure Blob Terraform state.
+
+**The existing Azure Container Apps application stack remains unchanged.** Creating AKS alone does not deploy the service, ingress controller, external secrets, namespace policies or GitOps configuration. Those require a separate workload delivery pipeline and security/recovery tests. Terraform provider validation passed in CI, but no AKS cluster has been applied to a live Azure subscription.
