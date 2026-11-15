@@ -20,8 +20,8 @@ terraform -chdir=infra/kubernetes validate
 1. Have a platform owner create the subscription, an encrypted Azure Blob remote state account/container with GitHub federated identity and an approved Entra administrator group.
 2. From an approved Azure identity:
 ```bash
-terraform -chdir=infra/kubernetes init -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" -backend-config="container_name=$STATE_CONTAINER" -backend-config="key=lsk-billing/aks/dev.tfstate" -backend-config="use_azuread_auth=true"
-terraform -chdir=infra/kubernetes plan -var-file="../../environments/kubernetes/dev.tfvars" -var="subscription_id=$AZURE_SUBSCRIPTION_ID" -var="service_name=billing" -var='admin_group_object_ids=["YOUR-APPROVED-ENTRA-GROUP-GUID"]' -out=reviewed.tfplan
+terraform -chdir=infra/kubernetes init -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" -backend-config="container_name=$STATE_CONTAINER" -backend-config="key=lsk-idp/aks/dev.tfstate" -backend-config="use_azuread_auth=true"
+terraform -chdir=infra/kubernetes plan -var-file="../../environments/kubernetes/dev.tfvars" -var="subscription_id=$AZURE_SUBSCRIPTION_ID" -var="service_name=idp" -var='admin_group_object_ids=["YOUR-APPROVED-ENTRA-GROUP-GUID"]' -out=reviewed.tfplan
 ```
 3. Inspect subnets, DNS, NAT egress, cluster private API, Entra permissions, availability-zone support and costs. Apply only with protected approver consent.
 4. Use a VNet-connected runner or VPN to obtain credentials: `az aks get-credentials -g RESOURCE_GROUP -n CLUSTER`. Configure RBAC and policy, storage, external secrets, workload identity bindings, GitOps, ingress gateway and monitoring before application rollout.
