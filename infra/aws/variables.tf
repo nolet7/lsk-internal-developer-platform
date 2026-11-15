@@ -68,3 +68,6 @@ variable "ecs_memory" {
   type = number
   default = 1024
 }
+
+variable "bedrock_model_id" { type = string }
+variable "bedrock_model_arn" { type = string }

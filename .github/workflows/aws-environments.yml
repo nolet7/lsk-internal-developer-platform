@@ -72,6 +72,8 @@ jobs:
           TF_VAR_oidc_jwks_url: ${{ vars.OIDC_JWKS_URL }}
           TF_VAR_tenant_region_policy: ${{ vars.TENANT_REGION_POLICY_JSON }}
           TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+          TF_VAR_bedrock_model_id: ${{ vars.BEDROCK_MODEL_ID }}
+          TF_VAR_bedrock_model_arn: ${{ vars.BEDROCK_MODEL_ARN }}
         run: terraform -chdir=infra/aws plan -input=false -out=release.tfplan -var-file="../../environments/aws/${{ inputs.environment }}.tfvars"
       - name: Apply reviewed environment plan
         if: ${{ inputs.apply }}
@@ -87,4 +89,6 @@ jobs:
           TF_VAR_oidc_jwks_url: ${{ vars.OIDC_JWKS_URL }}
           TF_VAR_tenant_region_policy: ${{ vars.TENANT_REGION_POLICY_JSON }}
           TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+          TF_VAR_bedrock_model_id: ${{ vars.BEDROCK_MODEL_ID }}
+          TF_VAR_bedrock_model_arn: ${{ vars.BEDROCK_MODEL_ARN }}
         run: terraform -chdir=infra/aws apply -input=false release.tfplan

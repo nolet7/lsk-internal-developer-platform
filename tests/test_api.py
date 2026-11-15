@@ -137,7 +137,8 @@ def test_operations_triage_scoped_and_read_only(lab, monkeypatch):
 
 def test_ops_requires_admin_service_allowlist(monkeypatch):
     from app.ops import evidence_for_aws
-    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "synthetic-lsk-lab")
+    monkeypatch.setenv("AWS_REGION", "us-east-1")
+    monkeypatch.setenv("LSK_AWS_LOG_GROUP", "/lsk/lsk-idp-dev")
     monkeypatch.setenv("LSK_OPS_ALLOWED_SERVICES", "lsk-lab-api")
     import pytest
     from fastapi import HTTPException
