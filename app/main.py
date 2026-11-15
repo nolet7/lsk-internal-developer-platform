@@ -271,3 +271,16 @@ def audit(request_id: str, p: Principal = Depends(require("platform:audit")),
             .order_by(AuditEvent.at)
         )
     ]
+
+@app.get("/v1/ai/catalog-advisory/{template_key}")
+def catalog_advisory(
+    template_key: str,
+    _p: Principal = Depends(require("catalog:read")),
+):
+    entry = CATALOG.get(template_key)
+    if not entry:
+        raise HTTPException(404, "Unknown catalog template")
+    from app.ai import explain_template
+    advice = explain_template(template_key, entry["description"])
+    return {"template": template_key, "advisory": advice,
+            "authoritative": False, "provisioned": False}
