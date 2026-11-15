@@ -25,3 +25,7 @@
 
 ## Honest interview position
 This is a working **request and approval control-plane prototype**, not an infrastructure provisioning product. The Terraform inside infra/ creates the IDP itself, not instances requested by catalog users. No deployed GCP system or saved operational performance evidence is established by source and CI alone.
+
+## Added: read-only AI-powered Cloud Run triage
+
+The privileged `GET /v1/ops/cloud-run/{service_name}/triage` endpoint now uses a bounded Cloud Logging tool (last 60 minutes, at most 25 ERROR-or-higher entries) and sends only count/window/service metadata to Vertex Gemini for a non-authoritative troubleshooting suggestion. It requires a distinct `platform:ops:read` JWT scope and the service must be listed in `LSK_OPS_ALLOWED_SERVICES` (empty by default, so disabled). No raw log content, tenant user data or secrets are sent to the model; no remediation actions exist. The runtime logging.viewer role is project-wide: this operator endpoint must stay restricted to trusted staff and explicitly allowlisted lab services. This is **AI-assisted troubleshooting**, not a full autonomous infrastructure agent, MCP service or production incident responder. GCP deployment and effectiveness are unverified.
