@@ -32,6 +32,7 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.11.0"
+      - run: bash -n scripts/aws-migrate.sh
       - run: terraform -chdir=infra/aws init -backend=false -input=false
       - run: terraform -chdir=infra/aws validate -no-color
   release:
