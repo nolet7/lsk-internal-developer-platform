@@ -1,0 +1,11 @@
+service_name="idp"
+environment="dev"
+region="us-east-1"
+vpc_cidr="10.81.0.0/16"
+image="ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/lsk-billing-dev@sha256:REPLACE_DIGEST"
+certificate_arn="arn:aws:acm:us-east-1:ACCOUNT:certificate/REPLACE"
+allowed_ingress_cidrs=[]
+oidc_issuer="https://YOUR-IDP/"
+oidc_audience="lsk-platform"
+oidc_jwks_url="https://YOUR-IDP/.well-known/jwks.json"
+# Set TF_VAR_db_password from an approved secret source; never commit.
