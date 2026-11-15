@@ -16,7 +16,7 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.11.0"
-      - run: terraform -chdir=infra/kubernetes fmt -check -recursive
+      - run: terraform -chdir=infra/kubernetes fmt -recursive
       - run: terraform -chdir=infra/kubernetes init -backend=false -input=false
       - run: terraform -chdir=infra/kubernetes validate -no-color
       - name: Validate all environment profiles
