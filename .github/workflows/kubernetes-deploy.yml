@@ -1,0 +1,55 @@
+name: GKE Kubernetes environment plan and apply
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options: [dev, staging, prod]
+      apply:
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: gke-${{ github.repository }}-${{ inputs.environment }}
+  cancel-in-progress: false
+jobs:
+  cluster:
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
+    environment: gcp-${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_KUBERNETES_TERRAFORM_SERVICE_ACCOUNT }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.11.0'
+      - name: Prepare isolated GKE state
+        env:
+          STATE_BUCKET: ${{ vars.GCP_K8S_STATE_BUCKET }}
+        run: |
+          set -euo pipefail
+          : "${STATE_BUCKET:?Define GCP_K8S_STATE_BUCKET in protected environment}"
+          terraform -chdir=infra/kubernetes init -input=false             -backend-config="bucket=$STATE_BUCKET"             -backend-config="prefix=lsk/${{ github.event.repository.name }}/gke/${{ inputs.environment }}"
+      - name: Validate
+        run: terraform -chdir=infra/kubernetes validate -no-color
+      - name: Plan
+        env:
+          TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+          TF_VAR_service_name: ${{ vars.LSK_SERVICE_NAME }}
+          SELECTED_REGION: ${{ vars.GCP_REGION }}
+        run: |
+          set -euo pipefail
+          : "${TF_VAR_project_id:?GCP_PROJECT_ID missing}"
+          : "${TF_VAR_service_name:?LSK_SERVICE_NAME missing}"
+          : "${SELECTED_REGION:?GCP_REGION missing}"
+          terraform -chdir=infra/kubernetes plan -input=false             -var-file="../../environments/kubernetes/${{ inputs.environment }}.tfvars"             -var="region=$SELECTED_REGION"             -out=release.tfplan
+      - name: Apply explicitly approved cluster plan
+        if: ${{ inputs.apply }}
+        run: terraform -chdir=infra/kubernetes apply -input=false release.tfplan
