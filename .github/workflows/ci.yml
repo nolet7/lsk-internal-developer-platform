@@ -23,3 +23,12 @@ jobs:
           terraform_version: '1.11.0'
       - run: terraform -chdir=infra init -backend=false -input=false
       - run: terraform -chdir=infra validate -no-color
+  network-blueprint-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.11.0'
+      - run: terraform -chdir=blueprints/network init -backend=false -input=false
+      - run: terraform -chdir=blueprints/network validate -no-color
