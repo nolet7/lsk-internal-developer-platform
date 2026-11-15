@@ -97,7 +97,7 @@ resource "azurerm_container_registry" "app" {
   name=replace("${var.service_name}${var.environment}${substr(var.subscription_id,0,6)}lsk","-","")
   resource_group_name=azurerm_resource_group.app.name
   location=azurerm_resource_group.app.location
-  sku="Premium"
+  sku=local.prod ? "Premium" : "Standard"
   admin_enabled=false
   tags=local.tags
 }
