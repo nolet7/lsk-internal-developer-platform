@@ -23,8 +23,8 @@ resource "google_sql_database_instance" "db" {
   region              = var.region
   deletion_protection = var.deletion_protection
   settings {
-    tier              = "db-f1-micro"
-    availability_type = "ZONAL"
+    tier = var.db_tier
+    availability_type = var.db_availability_type
     backup_configuration {
       enabled = true
     }
@@ -125,6 +125,19 @@ resource "google_cloud_run_v2_service" "api" {
         name  = "LSK_OPS_ALLOWED_SERVICES"
         value = var.ops_allowed_services
       }
+      env {
+        name  = "LSK_ENFORCE_RESIDENCY"
+        value = "true"
+      }
+      env {
+        name  = "LSK_DEPLOYMENT_REGION"
+        value = var.region
+      }
+      env {
+        name  = "LSK_TENANT_REGION_POLICY"
+        value = jsonencode(var.tenant_region_policy)
+      }
+
       env {
         name  = "OIDC_ISSUER"
         value = var.oidc_issuer

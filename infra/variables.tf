@@ -45,3 +45,22 @@ variable "ops_allowed_services" {
   default     = ""
   description = "Comma-separated allowlist for privileged Cloud Run log triage. Keep empty to disable."
 }
+
+variable "tenant_region_policy" {
+  type        = map(list(string))
+  description = "Signed JWT tenant_id -> allowed deployment regions. Empty map denies every tenant."
+  default     = {}
+}
+variable "db_tier" {
+  type        = string
+  description = "Cloud SQL instance tier: choose an HA-capable size for production."
+  default     = "db-f1-micro"
+}
+variable "db_availability_type" {
+  type    = string
+  default = "ZONAL"
+  validation {
+    condition     = contains(["ZONAL", "REGIONAL"], var.db_availability_type)
+    error_message = "Use ZONAL or REGIONAL."
+  }
+}
