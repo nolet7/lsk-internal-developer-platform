@@ -1,28 +1,53 @@
-name: Publish Image (Manual)
+name: GCP container build and provenance
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options: [dev, staging, prod]
 permissions:
   contents: read
   id-token: write
 jobs:
   publish:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
-    environment: gcp-lab
+    environment: gcp-${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_DEPLOYER_SERVICE_ACCOUNT }}
+          service_account: ${{ vars.GCP_PUBLISH_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v3
-      - run: gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
-      - name: Build and push immutable tag
+      - uses: docker/setup-buildx-action@v3
+      - name: Authenticate container registry
         env:
-          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          REGION: ${{ vars.GCP_REGION }}
+        run: gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+      - name: Resolve immutable candidate tag
+        id: coords
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT_ID }}
           REGION: ${{ vars.GCP_REGION }}
           REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY }}
         run: |
-          IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/idp:$GITHUB_SHA"
-          docker build --pull -t "$IMAGE" .
-          docker push "$IMAGE"
-          echo "Deploy by image digest after review and Terraform plan"
+          set -euo pipefail
+          echo "image=$REGION-docker.pkg.dev/$PROJECT/$REPOSITORY/api:$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        id: image
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.coords.outputs.image }}
+          provenance: true
+          sbom: true
+      - name: Provide immutable sha256 digest for reviewed release
+        env:
+          TAGGED: ${{ steps.coords.outputs.image }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          echo "Published: ${TAGGED%:*}@$DIGEST"
+          [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]] || exit 1
