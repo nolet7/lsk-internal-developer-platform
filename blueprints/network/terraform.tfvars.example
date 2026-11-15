@@ -1,0 +1,6 @@
+project_id = "REPLACE_WITH_GCP_PROJECT_ID"
+region = "us-central1"
+name_prefix = "lsk-lab"
+subnet_cidr = "10.50.0.0/24"
+enable_cloud_nat = false
+enable_private_services_access = false
