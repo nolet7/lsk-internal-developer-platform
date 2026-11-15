@@ -57,3 +57,7 @@ Verify that generated records are synthetic and no shared infrastructure depends
 
 ## Further hardening
 Production requires migrations, private connectivity, disaster recovery drills, immutable attestation, API rate limits, OIDC security tests, authorization threat model, policy-as-code, GitOps PR integration, platform cost quotas, audit integrity and SLO dashboards.
+
+## Current schema migration procedure supersedes old bootstrap notes
+
+Earlier references to `Base.metadata.create_all()` are obsolete. The one-off job now runs the reviewed Alembic `0001_initial` revision through `python scripts/migrate.py`; see [Schema Migration Guide](SCHEMA_MIGRATION.md). **Existing database tables must be schema-compared and baselined before applying the migration.** The new GitHub CI job tests the migration using a temporary PostgreSQL 16 service; this does not validate high availability, production traffic or backup restore.
