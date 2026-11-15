@@ -69,6 +69,11 @@ resource "google_project_iam_member" "runtime_vertex" {
   role    = "roles/aiplatform.user"
   member  = "serviceAccount:${google_service_account.runtime.email}"
 }
+resource "google_project_iam_member" "runtime_logging_viewer" {
+  project = var.project_id
+  role    = "roles/logging.viewer"
+  member  = "serviceAccount:${google_service_account.runtime.email}"
+}
 resource "google_cloud_run_v2_service" "api" {
   name                = local.prefix
   location            = var.region
@@ -117,6 +122,10 @@ resource "google_cloud_run_v2_service" "api" {
         value = var.genai_model
       }
       env {
+        name  = "LSK_OPS_ALLOWED_SERVICES"
+        value = var.ops_allowed_services
+      }
+      env {
         name  = "OIDC_ISSUER"
         value = var.oidc_issuer
       }
@@ -134,6 +143,7 @@ resource "google_cloud_run_v2_service" "api" {
     google_project_service.apis,
     google_project_iam_member.runtime_sql,
     google_project_iam_member.runtime_vertex,
+    google_project_iam_member.runtime_logging_viewer,
     google_secret_manager_secret_iam_member.runtime_db,
     google_secret_manager_secret_version.database_url,
   ]
