@@ -1,21 +1,24 @@
 # LSK Internal Developer Platform
 
+**Cloud deployment branch:** `feature/azure`. The service catalog uses `container-app-api` as the Azure API golden path. The application is hosted on Azure Container Apps with Azure PostgreSQL Flexible Server, internal Container Apps VNet ingress, and read-only Azure OpenAI advisory/operations triage. See [Release Matrix](docs/RELEASE_MATRIX.md) and [Azure Deployment Guide](docs/DEPLOY_AZURE.md). The catalog exports approved GitOps plans; **automatic cloud provisioning is still not implemented**. No live production deployment is claimed.
+
+
 **Independent, fictional corporate IT lab built for Senior AI Platform Engineer interviews.** This is not evidence of an LSK or LSK production deployment.
 
 [![CI](https://github.com/nolet7/lsk-internal-developer-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/nolet7/lsk-internal-developer-platform/actions/workflows/ci.yml)
 
 ## Goal
 
-Replace ticket-driven developer infrastructure requests with a governed, reusable platform catalog. Application teams can request Cloud Run API blueprints, managed PostgreSQL, and private-network connectivity. Platform reviewers control approvals and application teams receive a structured plan for a separately reviewed GitOps pipeline.
+Replace ticket-driven developer infrastructure requests with a governed, reusable platform catalog. Application teams can request Azure Container Apps API blueprints, managed PostgreSQL, and private-network connectivity. Platform reviewers control approvals and application teams receive a structured plan for a separately reviewed GitOps pipeline.
 
 ## Implemented
 
-- Versioned golden paths: `cloud-run-api`, `managed-postgres`, `private-service-connectivity`
+- Versioned golden paths: `container-app-api`, `managed-postgres`, `private-service-connectivity`
 - Tenant-aware OIDC authentication and scopes: `catalog:read`, `platform:request`, `platform:read`, `platform:approve`, `platform:approve:prod`, `platform:plan`, `platform:audit`
 - Idempotent request submission and PostgreSQL-backed requests, approvals and audit events
 - Independent approval, explicit production-scope requirement, approval/rejection state machine
 - Deterministic GitOps JSON plan export; **no direct cloud provisioning**
-- Terraform for Cloud Run, Cloud SQL, Secret Manager, Artifact Registry and runtime IAM
+- Terraform for Azure Container Apps, Azure PostgreSQL Flexible Server, Azure Key Vault, Azure Container Registry and runtime IAM
 - Docker Compose PostgreSQL, tests, lint, dependency audit and Terraform validation
 
 ## Local development
@@ -50,41 +53,41 @@ Open the OpenAPI documentation at `http://localhost:8080/docs`. Use a valid acce
 5. `GET /v1/requests/{id}/gitops-plan` — export an approved, versioned plan for a protected GitOps repository.
 6. `GET /v1/requests/{id}/audit` — inspect request events.
 
-## Deploy to GCP
+## Deploy to Azure
 
-Follow **[docs/DEPLOY_GCP.md](docs/DEPLOY_GCP.md)** for a controlled GCP deployment. Set a budget before provisioning and remember that alerts do not cap spending. Cloud SQL incurs costs even when Cloud Run has zero instances. Terraform state and plans may contain sensitive credentials.
+Follow **[docs/DEPLOY_Azure.md](docs/DEPLOY_Azure.md)** for a controlled Azure deployment. Set a budget before provisioning and remember that alerts do not cap spending. Azure PostgreSQL Flexible Server incurs costs even when Azure Container Apps has zero instances. Terraform state and plans may contain sensitive credentials.
 
 ## Architecture and interview defense
 
 - [Architecture and design decisions](docs/ARCHITECTURE.md)
-- [GCP deployment guide](docs/DEPLOY_GCP.md)
+- [Azure deployment guide](docs/DEPLOY_Azure.md)
 - [Interview walkthrough](docs/INTERVIEW_DEFENSE.md)
 
 ## Boundaries and next work
 
-This is an enterprise-style **lab foundation**, not a finished production portal. It does not yet create infrastructure PRs, deploy requested templates, or perform automatic cloud provisioning. An optional read-only Gemini catalog advisory is implemented but does not authorize or execute changes. Before a regulated production use case, add reviewed migrations, private networking, durable audit integrity, policy-as-code, service ownership, backoff/concurrency/load tests, HA/DR, cost quotas, security assessment and observability SLOs.
+This is an enterprise-style **lab foundation**, not a finished production portal. It does not yet create infrastructure PRs, deploy requested templates, or perform automatic cloud provisioning. An optional read-only Azure OpenAI catalog advisory is implemented but does not authorize or execute changes. Before a regulated production use case, add reviewed migrations, private networking, durable audit integrity, policy-as-code, service ownership, backoff/concurrency/load tests, HA/DR, cost quotas, security assessment and observability SLOs.
 
 Synthetic data only. No real customer or employer credentials.
 
 
 ---
 
-## Shared GCP request path
+## Shared Azure request path
 
-The diagrams below describe the **deployed configuration**, not a claim that this repository is currently running in Google Cloud. The local Docker Compose environment substitutes a local PostgreSQL container for Cloud SQL.
+The diagrams below describe the **deployed configuration**, not a claim that this repository is currently running in Azure. The local Docker Compose environment substitutes a local PostgreSQL container for Azure PostgreSQL Flexible Server.
 
 ```mermaid
 flowchart LR
-  U["Caller with valid credentials"] --> I["Cloud Run invoker IAM"]
-  I --> R["Cloud Run: FastAPI"]
+  U["Caller with valid credentials"] --> I["Azure Container Apps invoker IAM"]
+  I --> R["Azure Container Apps: FastAPI"]
   R --> J["Verify signed OIDC JWT, tenant_id, scope"]
   J --> H["Endpoint business rules"]
-  H <--> D[("Cloud SQL PostgreSQL")]
-  R -. "Runtime DATABASE_URL secret" .-> S["Secret Manager"]
+  H <--> D[("Azure PostgreSQL Flexible Server")]
+  R -. "Runtime DATABASE_URL secret" .-> S["Azure Key Vault"]
   H --> O["JSON HTTP response"]
 ```
 
-**Trust boundaries and components:** Cloud Run IAM determines whether a principal may invoke the deployed service. FastAPI **separately** checks a signed RS256 OIDC access JWT (issuer, audience, expiry, subject, tenant, and required scopes). An invoker identity token alone is not a substitute for the application's access token. Pydantic validates request bodies; the SQLAlchemy session reads/writes PostgreSQL with tenant filters. The application returns a synchronous JSON response. Terraform configures the Cloud Run runtime service account, Cloud SQL connection, Secret Manager and Artifact Registry; GitHub Actions builds/publishes containers through Workload Identity Federation. These CI/deployment components are **not** invoked by normal customer API calls.
+**Trust boundaries and components:** internal Container Apps VNet ingress determines whether a principal may invoke the deployed service. FastAPI **separately** checks a signed RS256 OIDC access JWT (issuer, audience, expiry, subject, tenant, and required scopes). An invoker identity token alone is not a substitute for the application's access token. Pydantic validates request bodies; the SQLAlchemy session reads/writes PostgreSQL with tenant filters. The application returns a synchronous JSON response. Terraform configures the Azure Container Apps runtime service account, Azure PostgreSQL Flexible Server connection, Azure Key Vault and Azure Container Registry; GitHub Actions builds/publishes containers through Workload Identity Federation. These CI/deployment components are **not** invoked by normal customer API calls.
 
 **Operational endpoints:** `GET /healthz` responds without querying the database; `GET /readyz` queries the database. A local schema bootstrap is provided by `scripts/migrate.py`, not by incoming requests. Schema bootstrap is not a reviewed Alembic migration strategy.
 
@@ -98,11 +101,11 @@ flowchart LR
 sequenceDiagram
   autonumber
   participant D as Developer
-  participant I as Cloud Run IAM
+  participant I as internal Container Apps VNet ingress
   participant A as FastAPI / OIDC / scopes
-  participant DB as Cloud SQL PostgreSQL
+  participant DB as Azure PostgreSQL Flexible Server
   participant R as Reviewer
-  participant V as Vertex AI Gemini (optional)
+  participant V as Azure OpenAI Azure OpenAI (optional)
   D->>I: GET /v1/catalog
   I->>A: Permit invoker
   A->>A: Require catalog:read; select CATALOG
@@ -141,8 +144,8 @@ sequenceDiagram
 
 | Stage | Implemented component | What happens | Outcome |
 |---|---|---|---|
-| 1. Discovery | `GET /v1/catalog` / in-code `CATALOG` | Read-only approved `cloud-run-api`, `managed-postgres`, `private-service-connectivity` templates, version `1.0.0` | Golden-path selection |
-| 2. Optional AI | `/v1/ai/catalog-advisory/{template_key}` -> `app/ai.py` -> Vertex AI | With `catalog:read`, sends only allowlisted catalog description for explanation | Advisory response; **no decision** |
+| 1. Discovery | `GET /v1/catalog` / in-code `CATALOG` | Read-only approved `container-app-api`, `managed-postgres`, `private-service-connectivity` templates, version `1.0.0` | Golden-path selection |
+| 2. Optional AI | `/v1/ai/catalog-advisory/{template_key}` -> `app/ai.py` -> Azure OpenAI | With `catalog:read`, sends only allowlisted catalog description for explanation | Advisory response; **no decision** |
 | 3. Request | `RequestIn`, `POST /v1/requests` | Validates template, DNS-style service name, `dev|stage|prod`, justification and header `Idempotency-Key` | Pending request |
 | 4. Persistence | `PlatformRequest`, `AuditEvent`, SQLAlchemy | Insert tenant-scoped request and audit event in one transaction; unique tenant/idempotency-key; payload hash | Durable request ID |
 | 5. Repeated submission | Hash and existing key lookup | Same requester and payload returns same request with `replayed:true`; different payload/actor returns 409 | No intentional duplicate submission |
@@ -161,7 +164,7 @@ Authorization: Bearer <DEVELOPER_OIDC_ACCESS_JWT>
 Idempotency-Key: demo-idp-request-0001
 Content-Type: application/json
 
-{"template":"cloud-run-api","service_name":"customer-api","environment":"dev","justification":"Deploy customer self-service API for corporate IT"}
+{"template":"container-app-api","service_name":"customer-api","environment":"dev","justification":"Deploy customer self-service API for corporate IT"}
 ```
 
 The API returns an `id`, `state:"pending"`, and `replayed:false`. A **different** reviewer with `platform:approve` calls `POST /v1/requests/REQUEST_ID/approve`. A production environment request additionally requires `platform:approve:prod`.
@@ -183,11 +186,11 @@ flowchart LR
   P -.-> C["Schema + policy-as-code + security review"]
   C -.-> T["Terraform plan + cost check"]
   T -.-> H["Human release approval"]
-  H -.-> G["GCP provisioning via WIF"]
+  H -.-> G["Azure provisioning via WIF"]
   G -.-> S["Service status and ownership back to IDP"]
 ```
 
-Dashed connections are **planned steps**, not functional components. In particular, the current API **does not** open a GitHub PR, apply Terraform, create Cloud Run services, create databases, or change VPC rules. `infra/` provisions the **IDP application's own hosting infrastructure** when applied manually; it is not an executor of requested golden paths.
+Dashed connections are **planned steps**, not functional components. In particular, the current API **does not** open a GitHub PR, apply Terraform, create Azure Container Apps services, create databases, or change VPC rules. `infra/` provisions the **IDP application's own hosting infrastructure** when applied manually; it is not an executor of requested golden paths.
 
 ### Security, errors and lifecycle limits
 
@@ -209,7 +212,7 @@ The independent [LSK network golden path](blueprints/network/README.md) contains
 
 ## Privileged read-only AI incident triage
 
-`GET /v1/ops/cloud-run/{service_name}/triage` collects up to 25 Cloud Run error-event metadata records from the previous hour (without raw log payloads) and asks Gemini for investigation suggestions. It requires the `platform:ops:read` scope, a Cloud Run service name explicitly configured in `LSK_OPS_ALLOWED_SERVICES`, and valid GCP identities/permissions. The allowlist defaults to empty, disabling this feature. It does not change infrastructure, issue IAM permissions, or establish incident root cause. See [JD alignment](docs/JD_ALIGNMENT.md).
+`GET /v1/ops/azure/{service_name}/triage` collects up to 25 Azure Container Apps error-event metadata records from the previous hour (without raw log payloads) and asks Azure OpenAI for investigation suggestions. It requires the `platform:ops:read` scope, a Azure Container Apps service name explicitly configured in `LSK_OPS_ALLOWED_SERVICES`, and valid Azure identities/permissions. The allowlist defaults to empty, disabling this feature. It does not change infrastructure, issue IAM permissions, or establish incident root cause. See [JD alignment](docs/JD_ALIGNMENT.md).
 
 
 ## Multinational operating standard
@@ -222,4 +225,4 @@ This repository now uses **versioned Alembic migrations**, not `Base.metadata.cr
 
 ## Private regional database connectivity
 
-An opt-in [private Cloud SQL + Direct VPC egress deployment](docs/PRIVATE_DATABASE_NETWORK.md) is available. Set `enable_private_sql=true` with a reviewed non-overlapping subnet CIDR. A `prod` Terraform plan now **requires** private SQL, REGIONAL HA and a non-micro Cloud SQL tier. This is still a lab reference until a real GCP plan/apply, approved security review, failover test and backup restore have been completed.
+An opt-in [private Azure PostgreSQL Flexible Server + Direct VPC egress deployment](docs/PRIVATE_DATABASE_NETWORK.md) is available. Set `enable_private_sql=true` with a reviewed non-overlapping subnet CIDR. A `prod` Terraform plan now **requires** private SQL, REGIONAL HA and a non-micro Azure PostgreSQL Flexible Server tier. This is still a lab reference until a real Azure plan/apply, approved security review, failover test and backup restore have been completed.
