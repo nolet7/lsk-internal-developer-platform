@@ -215,3 +215,7 @@ The independent [LSK network golden path](blueprints/network/README.md) contains
 ## Multinational operating standard
 
 See [docs/MULTINATIONAL_DEPLOYMENT.md](docs/MULTINATIONAL_DEPLOYMENT.md) for region isolation, tenant residency policy, deployment controls and outstanding readiness checks.
+
+## Database migration process (updated)
+
+This repository now uses **versioned Alembic migrations**, not `Base.metadata.create_all()` for cloud initialization. A dedicated PostgreSQL 16 CI job verifies the baseline schema and database-specific constraints. Run `python scripts/migrate.py` in a separately approved one-off job, **before** routing application traffic, and record the revision through `python -m alembic current`. For an existing database created by the earlier bootstrap, use the [brownfield migration checklist](docs/SCHEMA_MIGRATION.md) before changing it. Production deployment also requires backup/restore, private network, controlled change release and legal/region reviews.
