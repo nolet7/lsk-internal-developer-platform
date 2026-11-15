@@ -1,0 +1,24 @@
+name: AKS Kubernetes module validation
+on:
+  push:
+    branches: [feature/azure]
+    paths: ['modules/aks/**', 'infra/kubernetes/**', 'environments/kubernetes/**', '.github/workflows/kubernetes-validate.yml']
+  pull_request:
+    branches: [feature/azure]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.0"
+      - run: terraform -chdir=infra/kubernetes fmt -recursive
+      - run: terraform -chdir=infra/kubernetes init -backend=false -input=false
+      - run: terraform -chdir=infra/kubernetes validate -no-color
+      - name: Check environment profiles
+        run: |
+          for env in dev staging prod; do test -s "environments/kubernetes/$env.tfvars"; done
