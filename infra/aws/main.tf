@@ -182,7 +182,7 @@ resource "aws_secretsmanager_secret" "db_url" {
 }
 resource "aws_secretsmanager_secret_version" "db_url" {
   secret_id = aws_secretsmanager_secret.db_url.id
-  secret_string = "postgresql+psycopg://app:${urlencode(var.db_password)}@${aws_db_instance.db.address}:5432/platform"
+  secret_string = "postgresql+psycopg://app:${urlencode(var.db_password)}@${aws_db_instance.db.address}:5432/platform?sslmode=require"
 }
 resource "aws_iam_role_policy" "runtime_secrets" {
   name = "${local.name}-secrets"
