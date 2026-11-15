@@ -210,3 +210,8 @@ The independent [LSK network golden path](blueprints/network/README.md) contains
 ## Privileged read-only AI incident triage
 
 `GET /v1/ops/cloud-run/{service_name}/triage` collects up to 25 Cloud Run error-event metadata records from the previous hour (without raw log payloads) and asks Gemini for investigation suggestions. It requires the `platform:ops:read` scope, a Cloud Run service name explicitly configured in `LSK_OPS_ALLOWED_SERVICES`, and valid GCP identities/permissions. The allowlist defaults to empty, disabling this feature. It does not change infrastructure, issue IAM permissions, or establish incident root cause. See [JD alignment](docs/JD_ALIGNMENT.md).
+
+
+## Multinational operating standard
+
+See [docs/MULTINATIONAL_DEPLOYMENT.md](docs/MULTINATIONAL_DEPLOYMENT.md) for region isolation, tenant residency policy, deployment controls and outstanding readiness checks.
