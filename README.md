@@ -223,3 +223,10 @@ This repository now uses **versioned Alembic migrations**, not `Base.metadata.cr
 ## Private regional database connectivity
 
 An opt-in [private Cloud SQL + Direct VPC egress deployment](docs/PRIVATE_DATABASE_NETWORK.md) is available. Set `enable_private_sql=true` with a reviewed non-overlapping subnet CIDR. A `prod` Terraform plan now **requires** private SQL, REGIONAL HA and a non-micro Cloud SQL tier. This is still a lab reference until a real GCP plan/apply, approved security review, failover test and backup restore have been completed.
+
+
+## Optional private GKE Kubernetes infrastructure
+
+The independent [GKE Terraform module and deployment runbook](docs/KUBERNETES_INFRASTRUCTURE.md) provisions a reusable regional private GKE control plane, VPC-native pod/service networking, Cloud NAT, IAM and Workload Identity, Shielded Nodes and managed, autoscaled node pools. Source lives in `modules/gke/`; the cluster root is `infra/kubernetes/`. Choose `environments/kubernetes/{dev,staging,prod}.tfvars`; run the protected **GKE Kubernetes environment plan and apply** workflow after setting dedicated regional state and credentials.
+
+This is a **separate deployment option** from the Cloud Run architecture in `infra/`. The Terraform module provisions Kubernetes infrastructure but **does not install or release the business application**; its ingress, workload identity bindings, external secrets, policy admission, runtime observability and GitOps release remain independent acceptance gates. Kubernetes infrastructure has been schema-validated in CI, not provisioned in GCP.
