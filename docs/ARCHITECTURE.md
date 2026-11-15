@@ -30,3 +30,7 @@ Cloud Run IAM determines who can invoke the service. The app separately validate
 
 ## Production gaps
 Alembic migrations, provisioning adapter, OPA/Conftest, richer audit log integrity, cost controls, network policy validation, DB HA/restore drills, full OIDC end-to-end tests, multi-region failover, SLO telemetry, realistic load and concurrency testing, fine-grained service ownership and rate limiting.
+
+## Optional AI catalog advisory
+
+`GET /v1/ai/catalog-advisory/{template_key}` uses the Google Gen AI SDK against Vertex AI with the Cloud Run service identity. Only allowlisted, catalog-owned text is sent to the model; user requests and confidential records are never passed. The output is advisory only, bounded, and never executes changes. Costs depend on model and tokens; configure `genai_model` explicitly and test with a small quota. Vertex AI is not required for normal request/approval functionality. Approvals remain deterministic and human controlled.
