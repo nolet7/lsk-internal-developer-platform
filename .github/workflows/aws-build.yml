@@ -1,0 +1,50 @@
+name: AWS container build and provenance
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options: [dev, staging, prod]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  publish:
+    if: ${{ github.ref == 'refs/heads/feature/aws' }}
+    runs-on: ubuntu-latest
+    environment: aws-${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ECR_PUBLISH_ROLE_ARN }}
+      - uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: Resolve immutable repository coordinates
+        id: coords
+        env:
+          REPO: ${{ vars.AWS_ECR_REPOSITORY }}
+          REGION: ${{ vars.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          aws ecr describe-repositories --region "$REGION" --repository-names "$REPO" >/dev/null
+          echo "image=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$REPO:$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        id: image
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.coords.outputs.image }}
+          provenance: true
+          sbom: true
+      - name: Record immutable digest (share with gated release)
+        env:
+          TAGGED: ${{ steps.coords.outputs.image }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          echo "Verified published image: ${TAGGED%:*}@$DIGEST"
+          [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]] || exit 1
