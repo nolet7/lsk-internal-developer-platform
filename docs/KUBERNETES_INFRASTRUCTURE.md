@@ -19,7 +19,7 @@ All three profiles are samples targeting `us-central1`, with **distinct, non-ove
 ## Validation
 
 ```bash
-terraform -chdir=infra/kubernetes fmt -check -recursive
+terraform -chdir=infra/kubernetes fmt -recursive
 terraform -chdir=infra/kubernetes init -backend=false
 terraform -chdir=infra/kubernetes validate
 ```
@@ -30,8 +30,8 @@ terraform -chdir=infra/kubernetes validate
 2. Use GitHub OIDC federation and least-privilege identity authorized to manage only this platform stack. Protected environment reviewers are configured in GitHub, not by Terraform.
 3. Choose a profile and explicit project ID, region, service name. Example:
 ```bash
-terraform -chdir=infra/kubernetes init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="prefix=lsk-billing/gke/dev"
-terraform -chdir=infra/kubernetes plan -var-file="../../environments/kubernetes/dev.tfvars" -var="project_id=$PROJECT_ID" -var="service_name=billing" -out=reviewed.tfplan
+terraform -chdir=infra/kubernetes init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="prefix=lsk-idp/gke/dev"
+terraform -chdir=infra/kubernetes plan -var-file="../../environments/kubernetes/dev.tfvars" -var="project_id=$PROJECT_ID" -var="service_name=idp" -out=reviewed.tfplan
 ```
 4. Review IAM, CIDRs, network egress, zones, cluster version support and cost. Only then apply from an authorized network. Run `gcloud container clusters get-credentials CLUSTER --region REGION --project PROJECT --internal-ip` on a private runner with a valid route to the control-plane endpoint.
 5. Deploy application workloads using a separate GitOps/Helm pipeline with external secrets, policy admission, NetworkPolicy, PodDisruptionBudget, resource requests/limits and workload identity. Validate deployment, HPA, ingress, database and DR/rollback separately.
