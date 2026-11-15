@@ -5,6 +5,8 @@ a deterministic GitOps handoff plan for a separate reviewed delivery pipeline.
 """
 from __future__ import annotations
 
+from app.middleware import EnterpriseRequestMiddleware
+
 import hashlib
 import json
 import os
@@ -127,7 +129,6 @@ class RequestIn(BaseModel):
     justification: str = Field(min_length=12, max_length=1000)
 
 app = FastAPI(title="LSK Internal Developer Platform", version="1.0.0")
-from app.middleware import EnterpriseRequestMiddleware
 app.add_middleware(EnterpriseRequestMiddleware)
 
 
