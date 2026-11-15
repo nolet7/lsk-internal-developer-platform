@@ -11,7 +11,7 @@ def test_pg_idp_tenant_and_idempotency():
     engine=create_engine(os.environ["DATABASE_URL"])
     tenant="test-"+str(uuid4())
     data=dict(tenant_id=tenant,requester="dev",idempotency_key="key-123456789",
-        payload_hash="abc",template="cloud-run-api",template_version="1.0.0",
+        payload_hash="abc",template="ecs-fargate-api",template_version="1.0.0",
         service_name="test-api",environment="dev",justification="Synthetic development test",
         state="pending")
     with Session(engine) as session:

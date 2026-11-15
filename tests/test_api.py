@@ -31,7 +31,7 @@ def lab():
     m.app.dependency_overrides.clear()
     engine.dispose()
 
-def create(client, headers, template="cloud-run-api", env="dev"):
+def create(client, headers, template="ecs-fargate-api", env="dev"):
     return client.post("/v1/requests", headers={**headers, "Idempotency-Key": "unique-key-123"},
         json={"template": template, "service_name": "customer-api",
               "environment": env, "justification": "Corporate IT self service request"})
@@ -57,7 +57,7 @@ def test_approval_and_plan_handoff(lab):
     assert client.post(f"/v1/requests/{rid}/approve", headers=reviewer).status_code == 409
     plan = client.get(f"/v1/requests/{rid}/gitops-plan", headers=developer)
     assert plan.status_code == 200
-    assert plan.json()["gitops_spec"]["spec"]["template"] == "cloud-run-api"
+    assert plan.json()["gitops_spec"]["spec"]["template"] == "ecs-fargate-api"
     assert plan.json()["provisioned"] is False
     assert len(client.get(f"/v1/requests/{rid}/audit", headers=reviewer).json()) == 2
 
@@ -110,12 +110,12 @@ def test_ai_advisory_is_read_only_and_catalog_scoped(lab, monkeypatch):
     monkeypatch.setattr(ai, "explain_template", lambda key, description: "Read-only advice")
     client, auth = lab
     allowed = auth("developer", "tenant", ["catalog:read"])
-    result = client.get("/v1/ai/catalog-advisory/cloud-run-api", headers=allowed)
+    result = client.get("/v1/ai/catalog-advisory/ecs-fargate-api", headers=allowed)
     assert result.status_code == 200
     assert result.json()["provisioned"] is False
     assert result.json()["authoritative"] is False
     assert client.get("/v1/ai/catalog-advisory/not-a-template", headers=allowed).status_code == 404
-    assert client.get("/v1/ai/catalog-advisory/cloud-run-api").status_code == 401
+    assert client.get("/v1/ai/catalog-advisory/ecs-fargate-api").status_code == 401
 
 def test_operations_triage_scoped_and_read_only(lab, monkeypatch):
     from app import ops

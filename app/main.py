@@ -62,15 +62,15 @@ class AuditEvent(Base):
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 CATALOG = {
-    "cloud-run-api": {
+    "ecs-fargate-api": {
         "version": "1.0.0",
-        "description": "Containerized internal API on Cloud Run, workload identity and scaling limits",
-        "parameters": {"cpu": "1", "memory": "512Mi", "max_instances": 2},
-        "network": "identity-restricted",
+        "description": "Internal ECS Fargate API behind a private HTTPS ALB, least-privilege task identity and autoscaling",
+        "parameters": {"cpu": "512", "memory": "1024", "max_instances": 2},
+        "network": "private-alb",
     },
     "managed-postgres": {
         "version": "1.0.0",
-        "description": "Cloud SQL PostgreSQL plan with backups and review-required network policy",
+        "description": "Amazon RDS PostgreSQL private Multi-AZ request with reviewed backups and subnet group",
         "parameters": {"engine": "POSTGRES_16", "backup": True},
         "network": "private-connection-review",
     },
