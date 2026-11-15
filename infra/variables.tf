@@ -34,3 +34,8 @@ variable "deletion_protection" {
   type    = bool
   default = true
 }
+
+variable "genai_model" {
+  type        = string
+  description = "Explicit approved Vertex Gemini model ID"
+}
