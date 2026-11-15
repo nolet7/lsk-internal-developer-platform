@@ -22,6 +22,16 @@ resource "google_sql_database_instance" "db" {
   database_version    = "POSTGRES_16"
   region              = var.region
   deletion_protection = var.deletion_protection
+  lifecycle {
+    precondition {
+      condition = var.environment != "prod" || (
+        var.enable_private_sql &&
+        var.db_availability_type == "REGIONAL" &&
+        var.db_tier != "db-f1-micro"
+      )
+      error_message = "LSK production deployment requires private Cloud SQL, regional HA, and a dedicated non-micro database tier."
+    }
+  }
   settings {
     tier = var.db_tier
     availability_type = var.db_availability_type
