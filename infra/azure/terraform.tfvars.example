@@ -1,0 +1,13 @@
+subscription_id="REPLACE_WITH_SUBSCRIPTION_ID"
+service_name="idp"
+environment="dev"
+location="eastus2"
+vnet_cidr="10.96.0.0/20"
+image="companyregistry.azurecr.io/billing@sha256:REPLACE_WITH_DIGEST"
+key_vault_name="existing-lsk-lab-kv"
+key_vault_resource_group="lsk-shared-security"
+database_url_secret_id="https://existing-lsk-lab-kv.vault.azure.net/secrets/database-url"
+oidc_issuer="https://YOUR-IDP/"
+oidc_audience="lsk-platform"
+oidc_jwks_url="https://YOUR-IDP/.well-known/jwks.json"
+# TF_VAR_db_admin_password comes from a protected secret.
