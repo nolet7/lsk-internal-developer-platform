@@ -161,13 +161,34 @@ resource "azurerm_container_app" "api" {
       image=var.image
       cpu=0.5
       memory="1Gi"
-      env { name="DATABASE_URL" secret_name="database-url" }
-      env { name="OIDC_ISSUER" value=var.oidc_issuer }
-      env { name="OIDC_AUDIENCE" value=var.oidc_audience }
-      env { name="OIDC_JWKS_URL" value=var.oidc_jwks_url }
-      env { name="LSK_ENFORCE_RESIDENCY" value="true" }
-      env { name="LSK_DEPLOYMENT_REGION" value=var.location }
-      env { name="LSK_TENANT_REGION_POLICY" value=jsonencode(var.tenant_region_policy) }
+      env {
+        name = "DATABASE_URL"
+        secret_name = "database-url"
+      }
+      env {
+        name = "OIDC_ISSUER"
+        value = var.oidc_issuer
+      }
+      env {
+        name = "OIDC_AUDIENCE"
+        value = var.oidc_audience
+      }
+      env {
+        name = "OIDC_JWKS_URL"
+        value = var.oidc_jwks_url
+      }
+      env {
+        name = "LSK_ENFORCE_RESIDENCY"
+        value = "true"
+      }
+      env {
+        name = "LSK_DEPLOYMENT_REGION"
+        value = var.location
+      }
+      env {
+        name = "LSK_TENANT_REGION_POLICY"
+        value = jsonencode(var.tenant_region_policy)
+      }
     }
   }
   ingress {
