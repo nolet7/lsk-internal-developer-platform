@@ -32,3 +32,28 @@ jobs:
           terraform_version: '1.11.0'
       - run: terraform -chdir=blueprints/network init -backend=false -input=false
       - run: terraform -chdir=blueprints/network validate -no-color
+
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: lsk_test
+          POSTGRES_USER: lsk
+          POSTGRES_PASSWORD: synthetic_test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U lsk -d lsk_test"
+          --health-interval=5s --health-timeout=5s --health-retries=10
+    env:
+      DATABASE_URL: postgresql+psycopg://lsk:synthetic_test_only@localhost:5432/lsk_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-dev.txt
+      - run: python scripts/migrate.py
+      - run: python -m pytest -q tests/test_postgres_integration.py
