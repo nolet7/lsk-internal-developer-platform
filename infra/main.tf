@@ -2,7 +2,7 @@ locals {
   prefix = "lsk-idp-${var.environment}"
 }
 resource "google_project_service" "apis" {
-  for_each           = toset(["run.googleapis.com", "sqladmin.googleapis.com", "secretmanager.googleapis.com", "artifactregistry.googleapis.com", "iam.googleapis.com"])
+  for_each           = toset(["run.googleapis.com", "sqladmin.googleapis.com", "secretmanager.googleapis.com", "artifactregistry.googleapis.com", "iam.googleapis.com", "aiplatform.googleapis.com"])
   project            = var.project_id
   service            = each.key
   disable_on_destroy = false
@@ -64,6 +64,11 @@ resource "google_project_iam_member" "runtime_sql" {
   role    = "roles/cloudsql.client"
   member  = "serviceAccount:${google_service_account.runtime.email}"
 }
+resource "google_project_iam_member" "runtime_vertex" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.runtime.email}"
+}
 resource "google_cloud_run_v2_service" "api" {
   name                = local.prefix
   location            = var.region
@@ -100,6 +105,18 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
       env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+      env {
+        name  = "GOOGLE_CLOUD_LOCATION"
+        value = var.region
+      }
+      env {
+        name  = "GOOGLE_GENAI_MODEL"
+        value = var.genai_model
+      }
+      env {
         name  = "OIDC_ISSUER"
         value = var.oidc_issuer
       }
@@ -116,6 +133,7 @@ resource "google_cloud_run_v2_service" "api" {
   depends_on = [
     google_project_service.apis,
     google_project_iam_member.runtime_sql,
+    google_project_iam_member.runtime_vertex,
     google_secret_manager_secret_iam_member.runtime_db,
     google_secret_manager_secret_version.database_url,
   ]
