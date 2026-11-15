@@ -104,3 +104,15 @@ def test_missing_auth():
     with pytest.raises(HTTPException) as error:
         m.get_principal(None)
     assert error.value.status_code == 401
+
+def test_ai_advisory_is_read_only_and_catalog_scoped(lab, monkeypatch):
+    from app import ai
+    monkeypatch.setattr(ai, "explain_template", lambda key, description: "Read-only advice")
+    client, auth = lab
+    allowed = auth("developer", "tenant", ["catalog:read"])
+    result = client.get("/v1/ai/catalog-advisory/cloud-run-api", headers=allowed)
+    assert result.status_code == 200
+    assert result.json()["provisioned"] is False
+    assert result.json()["authoritative"] is False
+    assert client.get("/v1/ai/catalog-advisory/not-a-template", headers=allowed).status_code == 404
+    assert client.get("/v1/ai/catalog-advisory/cloud-run-api").status_code == 401
