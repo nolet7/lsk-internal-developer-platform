@@ -1,0 +1,8 @@
+project_id  = "REPLACE_WITH_GCP_PROJECT_ID"
+region      = "us-central1"
+environment = "lab"
+image       = "us-central1-docker.pkg.dev/PROJECT_ID/lsk-idp-lab/idp@sha256:REPLACE_WITH_64_HEX_DIGEST"
+oidc_issuer = "https://YOUR_IDENTITY_PROVIDER/"
+oidc_audience = "lsk-idp"
+oidc_jwks_url = "https://YOUR_IDENTITY_PROVIDER/.well-known/jwks.json"
+# Export TF_VAR_db_password securely, never commit real passwords or *.tfvars.
