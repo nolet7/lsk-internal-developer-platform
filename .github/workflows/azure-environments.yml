@@ -1,0 +1,106 @@
+name: Azure CI and environment release
+on:
+  push:
+    branches: [feature/azure]
+  pull_request:
+    branches: [feature/azure]
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options: [dev, staging, prod]
+      image_digest:
+        required: true
+        type: string
+        description: ACR full URI pinned by sha256
+      apply:
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: azure-${{ github.repository }}-${{ inputs.environment || github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.0"
+      - run: terraform -chdir=infra/azure init -backend=false -input=false
+      - run: terraform -chdir=infra/azure validate -no-color
+  release:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/azure' }}
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: azure-${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.0"
+      - name: Validate digest
+        env:
+          IMAGE: ${{ inputs.image_digest }}
+        run: |
+          [[ "$IMAGE" =~ @sha256:[0-9a-f]{64}$ ]] || exit 1
+      - name: Init isolated Azure Blob Terraform state
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_USE_AZUREAD: "true"
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          terraform -chdir=infra/azure init -input=false             -backend-config="resource_group_name=${{ vars.AZURE_STATE_RESOURCE_GROUP }}"             -backend-config="storage_account_name=${{ vars.AZURE_STATE_STORAGE_ACCOUNT }}"             -backend-config="container_name=${{ vars.AZURE_STATE_CONTAINER }}"             -backend-config="key=lsk-${{ github.event.repository.name }}-${{ inputs.environment }}.tfstate"             -backend-config="use_azuread_auth=true"
+      - name: Plan Container Apps and private PostgreSQL
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_subscription_id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_service_name: ${{ vars.LSK_SERVICE_NAME }}
+          TF_VAR_location: ${{ vars.AZURE_LOCATION }}
+          TF_VAR_vnet_cidr: ${{ vars.AZURE_VNET_CIDR }}
+          TF_VAR_image: ${{ inputs.image_digest }}
+          TF_VAR_key_vault_name: ${{ vars.AZURE_KEY_VAULT_NAME }}
+          TF_VAR_key_vault_resource_group: ${{ vars.AZURE_KEY_VAULT_RESOURCE_GROUP }}
+          TF_VAR_database_url_secret_id: ${{ vars.AZURE_DATABASE_URL_SECRET_ID }}
+          TF_VAR_oidc_issuer: ${{ vars.OIDC_ISSUER }}
+          TF_VAR_oidc_audience: ${{ vars.OIDC_AUDIENCE }}
+          TF_VAR_oidc_jwks_url: ${{ vars.OIDC_JWKS_URL }}
+          TF_VAR_tenant_region_policy: ${{ vars.TENANT_REGION_POLICY_JSON }}
+          TF_VAR_db_admin_password: ${{ secrets.DB_ADMIN_PASSWORD }}
+        run: terraform -chdir=infra/azure plan -input=false -out=release.tfplan -var-file="../../environments/azure/${{ inputs.environment }}.tfvars"
+      - name: Apply reviewed environment plan
+        if: ${{ inputs.apply }}
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_subscription_id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_service_name: ${{ vars.LSK_SERVICE_NAME }}
+          TF_VAR_location: ${{ vars.AZURE_LOCATION }}
+          TF_VAR_vnet_cidr: ${{ vars.AZURE_VNET_CIDR }}
+          TF_VAR_image: ${{ inputs.image_digest }}
+          TF_VAR_key_vault_name: ${{ vars.AZURE_KEY_VAULT_NAME }}
+          TF_VAR_key_vault_resource_group: ${{ vars.AZURE_KEY_VAULT_RESOURCE_GROUP }}
+          TF_VAR_database_url_secret_id: ${{ vars.AZURE_DATABASE_URL_SECRET_ID }}
+          TF_VAR_oidc_issuer: ${{ vars.OIDC_ISSUER }}
+          TF_VAR_oidc_audience: ${{ vars.OIDC_AUDIENCE }}
+          TF_VAR_oidc_jwks_url: ${{ vars.OIDC_JWKS_URL }}
+          TF_VAR_tenant_region_policy: ${{ vars.TENANT_REGION_POLICY_JSON }}
+          TF_VAR_db_admin_password: ${{ secrets.DB_ADMIN_PASSWORD }}
+        run: terraform -chdir=infra/azure apply -input=false release.tfplan
