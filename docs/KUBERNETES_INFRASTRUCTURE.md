@@ -18,8 +18,8 @@ terraform -chdir=infra/kubernetes validate
 1. Before provisioning, create an S3 state bucket with versioning and encryption, restrict the GitHub OIDC deploy role to the exact repository and protected environment, and approve a cluster-admin principal ARN. Keep EKS Terraform state separate from ECS infrastructure state.
 2. Choose the account, region and profile. From a privileged environment:
 ```bash
-terraform -chdir=infra/kubernetes init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="key=lsk-billing/eks/dev.tfstate" -backend-config="region=$AWS_REGION" -backend-config="use_lockfile=true"
-terraform -chdir=infra/kubernetes plan -var-file="../../environments/kubernetes/dev.tfvars" -var="service_name=billing" -var="cluster_admin_role_arn=$ADMIN_ROLE_ARN" -out=reviewed.tfplan
+terraform -chdir=infra/kubernetes init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="key=lsk-idp/eks/dev.tfstate" -backend-config="region=$AWS_REGION" -backend-config="use_lockfile=true"
+terraform -chdir=infra/kubernetes plan -var-file="../../environments/kubernetes/dev.tfvars" -var="service_name=idp" -var="cluster_admin_role_arn=$ADMIN_ROLE_ARN" -out=reviewed.tfplan
 ```
 3. Review the plan, account context, IAM, CIDR overlaps, availability zones, Amazon EKS version, worker instance SKU, NAT and network egress. Only an approved apply from a trusted platform identity may create the cluster.
 4. Because the control plane is **private**, a VPN/bastion/private GitHub runner with EKS API DNS and VPC access is required for `kubectl`, Helm and GitOps. Use `aws eks update-kubeconfig --region REGION --name CLUSTER_NAME` from that private runner.
