@@ -117,6 +117,7 @@ resource "google_cloud_run_v2_service" "api" {
     google_project_service.apis,
     google_project_iam_member.runtime_sql,
     google_secret_manager_secret_iam_member.runtime_db,
+    google_secret_manager_secret_version.database_url,
   ]
 }
 # No allUsers Cloud Run invoker IAM binding. Grant only trusted principals.
