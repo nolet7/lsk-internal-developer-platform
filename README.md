@@ -202,3 +202,7 @@ Dashed connections are **planned steps**, not functional components. In particul
 ## Brixton JD alignment
 
 Read [skill coverage and production readiness gaps](docs/JD_ALIGNMENT.md). The enterprise examples are fictional LSK portfolio workloads; they are not historical employer production deployments.
+
+## Network infrastructure blueprint
+
+The independent [LSK network golden path](blueprints/network/README.md) contains Terraform for a custom VPC, configurable subnet, optional Cloud NAT, and optional Private Service Access for cloud databases. It is **not** automatically executed by the IDP request workflow. A human must review any cloud costs, plans and networking changes.
