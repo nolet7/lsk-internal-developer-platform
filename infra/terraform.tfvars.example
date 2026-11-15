@@ -9,3 +9,12 @@ oidc_jwks_url = "https://YOUR_IDENTITY_PROVIDER/.well-known/jwks.json"
 genai_model = "YOUR_APPROVED_GEMINI_MODEL_ID"
 
 ops_allowed_services = "" # Disabled by default. Explicitly allowlist lab-owned Cloud Run service names.
+
+# Multinational regional lab overrides — uncomment only after cost/security review.
+# tenant_region_policy = {
+#   "synthetic-us-tenant" = ["us-central1"]
+# }
+# enable_private_sql = true
+# private_subnet_cidr = "10.90.0.0/24"   # Use an enterprise-reviewed non-overlapping /26+ range
+# db_availability_type = "REGIONAL"      # Required with environment="prod"
+# db_tier = "db-custom-2-7680"           # Production-capable tier increases cost
