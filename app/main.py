@@ -291,15 +291,15 @@ def catalog_advisory(
     return {"template": template_key, "advisory": advice,
             "authoritative": False, "provisioned": False}
 
-@app.get("/v1/ops/cloud-run/{service_name}/triage")
+@app.get("/v1/ops/aws/{service_name}/triage")
 def cloud_run_triage(
     service_name: str,
     _operator: Principal = Depends(require("platform:ops:read")),
 ):
     """Privileged operations-only triage. No tenant-owned resource discovery."""
-    from app.ops import evidence_for_cloud_run, advise
+    from app.ops import evidence_for_aws, advise
 
-    evidence = evidence_for_cloud_run(service_name)
+    evidence = evidence_for_aws(service_name)
     advice = advise(evidence)
     return {
         "evidence": evidence,
