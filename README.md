@@ -206,3 +206,7 @@ Read [skill coverage and production readiness gaps](docs/JD_ALIGNMENT.md). The e
 ## Network infrastructure blueprint
 
 The independent [LSK network golden path](blueprints/network/README.md) contains Terraform for a custom VPC, configurable subnet, optional Cloud NAT, and optional Private Service Access for cloud databases. It is **not** automatically executed by the IDP request workflow. A human must review any cloud costs, plans and networking changes.
+
+## Privileged read-only AI incident triage
+
+`GET /v1/ops/cloud-run/{service_name}/triage` collects up to 25 Cloud Run error-event metadata records from the previous hour (without raw log payloads) and asks Gemini for investigation suggestions. It requires the `platform:ops:read` scope, a Cloud Run service name explicitly configured in `LSK_OPS_ALLOWED_SERVICES`, and valid GCP identities/permissions. The allowlist defaults to empty, disabling this feature. It does not change infrastructure, issue IAM permissions, or establish incident root cause. See [JD alignment](docs/JD_ALIGNMENT.md).
