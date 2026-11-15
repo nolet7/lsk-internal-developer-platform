@@ -31,7 +31,10 @@ resource "aws_subnet" "private" {
 }
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
-  route { cidr_block = "0.0.0.0/0" gateway_id = aws_internet_gateway.igw.id }
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
 }
 resource "aws_route_table_association" "public" {
   count = 2
@@ -51,7 +54,10 @@ resource "aws_nat_gateway" "nat" {
 resource "aws_route_table" "private" {
   count = 2
   vpc_id = aws_vpc.main.id
-  route { cidr_block = "0.0.0.0/0" nat_gateway_id = aws_nat_gateway.nat[local.prod ? count.index : 0].id }
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat[local.prod ? count.index : 0].id
+  }
 }
 resource "aws_route_table_association" "private" {
   count = 2
@@ -68,7 +74,12 @@ resource "aws_security_group" "alb" {
     protocol = "tcp"
     cidr_blocks = var.allowed_ingress_cidrs
   }
-  egress { from_port=0 to_port=0 protocol="-1" cidr_blocks=["0.0.0.0/0"] }
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 resource "aws_security_group" "app" {
   name_prefix = "${local.name}-app-"
@@ -79,7 +90,12 @@ resource "aws_security_group" "app" {
     protocol = "tcp"
     security_groups = [aws_security_group.alb.id]
   }
-  egress { from_port=0 to_port=0 protocol="-1" cidr_blocks=["0.0.0.0/0"] }
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 resource "aws_security_group" "db" {
   name_prefix = "${local.name}-db-"
@@ -142,7 +158,10 @@ resource "aws_cloudwatch_log_group" "app" {
 data "aws_iam_policy_document" "assume_task" {
   statement {
     actions = ["sts:AssumeRole"]
-    principals { type = "Service" identifiers = ["ecs-tasks.amazonaws.com"] }
+    principals {
+      type = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
   }
 }
 resource "aws_iam_role" "execution" {
@@ -174,7 +193,10 @@ resource "aws_iam_role_policy" "runtime_secrets" {
 }
 resource "aws_ecs_cluster" "app" {
   name = local.name
-  setting { name = "containerInsights" value = "enabled" }
+  setting {
+    name = "containerInsights"
+    value = "enabled"
+  }
 }
 resource "aws_ecs_task_definition" "app" {
   family = local.name
@@ -216,7 +238,12 @@ resource "aws_lb_target_group" "api" {
   protocol = "HTTP"
   vpc_id = aws_vpc.main.id
   target_type = "ip"
-  health_check { path="/readyz",matcher="200",healthy_threshold=2,unhealthy_threshold=3 }
+  health_check {
+    path = "/readyz"
+    matcher = "200"
+    healthy_threshold = 2
+    unhealthy_threshold = 3
+  }
 }
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.internal.arn
@@ -224,7 +251,10 @@ resource "aws_lb_listener" "https" {
   protocol = "HTTPS"
   ssl_policy = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   certificate_arn = var.certificate_arn
-  default_action { type="forward" target_group_arn=aws_lb_target_group.api.arn }
+  default_action {
+    type = "forward"
+    target_group_arn = aws_lb_target_group.api.arn
+  }
 }
 resource "aws_ecs_service" "api" {
   name = local.name
@@ -242,7 +272,11 @@ resource "aws_ecs_service" "api" {
     security_groups = [aws_security_group.app.id]
     assign_public_ip = false
   }
-  load_balancer { target_group_arn=aws_lb_target_group.api.arn container_name="api" container_port=8080 }
+  load_balancer {
+    target_group_arn = aws_lb_target_group.api.arn
+    container_name = "api"
+    container_port = 8080
+  }
   depends_on = [aws_lb_listener.https,aws_iam_role_policy.runtime_secrets,aws_iam_role_policy_attachment.execution]
 }
 output "internal_alb_dns" { value = aws_lb.internal.dns_name }
