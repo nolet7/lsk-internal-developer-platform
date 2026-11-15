@@ -28,7 +28,10 @@ variable "db_admin_password" {
   sensitive=true
   description="Lab-only database administrator credential; prefer identity auth and dedicated app user in production. Stored in Terraform state."
 }
-variable "key_vault_name" { type=string description="Pre-existing secured Key Vault containing app DATABASE_URL" }
+variable "key_vault_name" {
+  type = string
+  description = "Pre-existing secured Key Vault containing app DATABASE_URL"
+}
 variable "key_vault_resource_group" { type=string }
 variable "database_url_secret_id" {
   type=string
@@ -37,9 +40,27 @@ variable "database_url_secret_id" {
 variable "oidc_issuer" { type=string }
 variable "oidc_audience" { type=string }
 variable "oidc_jwks_url" { type=string }
-variable "tenant_region_policy" { type=map(list(string)) default={} }
-variable "pg_sku" { type=string default="B_Standard_B1ms" }
-variable "pg_storage_mb" { type=number default=32768 }
-variable "min_replicas" { type=number default=0 }
-variable "max_replicas" { type=number default=2 }
-variable "enable_zone_redundancy" { type=bool default=false }
+variable "tenant_region_policy" {
+  type = map(list(string))
+  default = {}
+}
+variable "pg_sku" {
+  type = string
+  default = "B_Standard_B1ms"
+}
+variable "pg_storage_mb" {
+  type = number
+  default = 32768
+}
+variable "min_replicas" {
+  type = number
+  default = 0
+}
+variable "max_replicas" {
+  type = number
+  default = 2
+}
+variable "enable_zone_redundancy" {
+  type = bool
+  default = false
+}
