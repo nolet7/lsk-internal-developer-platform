@@ -127,6 +127,9 @@ class RequestIn(BaseModel):
     justification: str = Field(min_length=12, max_length=1000)
 
 app = FastAPI(title="LSK Internal Developer Platform", version="1.0.0")
+from app.middleware import EnterpriseRequestMiddleware
+app.add_middleware(EnterpriseRequestMiddleware)
+
 
 @app.get("/healthz")
 def healthz():
