@@ -2,7 +2,7 @@ locals {
   prefix = "lsk-idp-${var.environment}"
 }
 resource "google_project_service" "apis" {
-  for_each           = toset(["run.googleapis.com", "sqladmin.googleapis.com", "secretmanager.googleapis.com", "artifactregistry.googleapis.com", "iam.googleapis.com", "aiplatform.googleapis.com"])
+  for_each           = toset(["run.googleapis.com", "sqladmin.googleapis.com", "secretmanager.googleapis.com", "artifactregistry.googleapis.com", "iam.googleapis.com","compute.googleapis.com","servicenetworking.googleapis.com", "aiplatform.googleapis.com"])
   project            = var.project_id
   service            = each.key
   disable_on_destroy = false
@@ -29,10 +29,11 @@ resource "google_sql_database_instance" "db" {
       enabled = true
     }
     ip_configuration {
-      ipv4_enabled = true
+      ipv4_enabled = !var.enable_private_sql
+      private_network = var.enable_private_sql ? google_compute_network.private[0].id : null
     }
   }
-  depends_on = [google_project_service.apis]
+  depends_on = [google_project_service.apis, google_service_networking_connection.private_services]
 }
 resource "google_sql_database" "platform" {
   name     = "platform"
@@ -81,6 +82,17 @@ resource "google_cloud_run_v2_service" "api" {
   deletion_protection = var.deletion_protection
   template {
     service_account = google_service_account.runtime.email
+    dynamic "vpc_access" {
+      for_each = var.enable_private_sql ? [1] : []
+      content {
+        network_interfaces {
+          network    = google_compute_network.private[0].name
+          subnetwork = google_compute_subnetwork.private[0].name
+          tags       = ["lsk-${var.environment}-api"]
+        }
+        egress = "PRIVATE_RANGES_ONLY"
+      }
+    }
     scaling {
       min_instance_count = 0
       max_instance_count = 2
