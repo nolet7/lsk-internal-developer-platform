@@ -40,10 +40,31 @@ variable "db_password" {
 variable "oidc_issuer" { type = string }
 variable "oidc_audience" { type = string }
 variable "oidc_jwks_url" { type = string }
-variable "tenant_region_policy" { type = map(list(string)) default = {} }
-variable "desired_count" { type = number default = 1 }
-variable "db_instance_class" { type = string default = "db.t4g.micro" }
-variable "db_deletion_protection" { type = bool default = false }
-variable "db_backup_retention_days" { type = number default = 7 }
-variable "ecs_cpu" { type = number default = 512 }
-variable "ecs_memory" { type = number default = 1024 }
+variable "tenant_region_policy" {
+  type = map(list(string))
+  default = {}
+}
+variable "desired_count" {
+  type = number
+  default = 1
+}
+variable "db_instance_class" {
+  type = string
+  default = "db.t4g.micro"
+}
+variable "db_deletion_protection" {
+  type = bool
+  default = false
+}
+variable "db_backup_retention_days" {
+  type = number
+  default = 7
+}
+variable "ecs_cpu" {
+  type = number
+  default = 512
+}
+variable "ecs_memory" {
+  type = number
+  default = 1024
+}
