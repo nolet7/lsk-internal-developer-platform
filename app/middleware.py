@@ -1,11 +1,17 @@
 """PII-minimizing structured request logs, correlation IDs and headers."""
 import json
 import logging
+import sys
 import time
 from uuid import uuid4
 from starlette.middleware.base import BaseHTTPMiddleware
 log=logging.getLogger("lsk.access")
 log.setLevel(logging.INFO)
+if not log.handlers:
+    stream=logging.StreamHandler(sys.stdout)
+    stream.setFormatter(logging.Formatter("%(message)s"))
+    log.addHandler(stream)
+log.propagate=False
 class EnterpriseRequestMiddleware(BaseHTTPMiddleware):
     async def dispatch(self,request,call_next):
         request_id=str(uuid4())
