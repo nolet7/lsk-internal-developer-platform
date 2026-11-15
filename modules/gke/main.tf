@@ -88,6 +88,12 @@ resource "google_container_cluster" "cluster" {
   initial_node_count = 1
   networking_mode = "VPC_NATIVE"
   deletion_protection = var.environment == "prod"
+  lifecycle {
+    precondition {
+      condition = var.environment != "prod" || (length(var.node_zones) >= 3 && var.min_nodes_per_zone >= 2)
+      error_message = "LSK production GKE requires three zones and at least two nodes per zone."
+    }
+  }
   enable_shielded_nodes = true
   release_channel { channel = var.release_channel }
   workload_identity_config { workload_pool = "${var.project_id}.svc.id.goog" }
@@ -110,7 +116,7 @@ resource "google_container_node_pool" "system" {
   name = "${local.name}-system"
   location = var.region
   cluster = google_container_cluster.cluster.name
-  node_count = 1
+  node_count = var.min_nodes_per_zone
   autoscaling {
     min_node_count = var.min_nodes_per_zone
     max_node_count = var.max_nodes_per_zone
