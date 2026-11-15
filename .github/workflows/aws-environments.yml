@@ -1,0 +1,89 @@
+name: AWS CI and environment release
+on:
+  push:
+    branches: [feature/aws]
+  pull_request:
+    branches: [feature/aws]
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options: [dev, staging, prod]
+      image_digest:
+        required: true
+        type: string
+        description: ECR full URI pinned by sha256
+      apply:
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: aws-${{ github.repository }}-${{ inputs.environment || github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.0"
+      - run: terraform -chdir=infra/aws init -backend=false -input=false
+      - run: terraform -chdir=infra/aws validate -no-color
+  release:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/aws' }}
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: aws-${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_GITHUB_DEPLOY_ROLE_ARN }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.0"
+      - name: Validate image digest
+        env:
+          IMAGE: ${{ inputs.image_digest }}
+        run: |
+          [[ "$IMAGE" =~ @sha256:[0-9a-f]{64}$ ]] || exit 1
+      - name: Init environment state
+        env:
+          TF_STATE_BUCKET: ${{ vars.AWS_TF_STATE_BUCKET }}
+        run: |
+          terraform -chdir=infra/aws init -input=false             -backend-config="bucket=$TF_STATE_BUCKET"             -backend-config="key=lsk/${{ github.event.repository.name }}/${{ inputs.environment }}.tfstate"             -backend-config="region=${{ vars.AWS_REGION }}"             -backend-config="use_lockfile=true"
+      - name: Plan private ECS + RDS release
+        env:
+          TF_VAR_service_name: ${{ vars.LSK_SERVICE_NAME }}
+          TF_VAR_region: ${{ vars.AWS_REGION }}
+          TF_VAR_vpc_cidr: ${{ vars.AWS_VPC_CIDR }}
+          TF_VAR_image: ${{ inputs.image_digest }}
+          TF_VAR_certificate_arn: ${{ vars.AWS_ACM_CERTIFICATE_ARN }}
+          TF_VAR_allowed_ingress_cidrs: ${{ vars.AWS_ALLOWED_INGRESS_CIDRS_JSON }}
+          TF_VAR_oidc_issuer: ${{ vars.OIDC_ISSUER }}
+          TF_VAR_oidc_audience: ${{ vars.OIDC_AUDIENCE }}
+          TF_VAR_oidc_jwks_url: ${{ vars.OIDC_JWKS_URL }}
+          TF_VAR_tenant_region_policy: ${{ vars.TENANT_REGION_POLICY_JSON }}
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+        run: terraform -chdir=infra/aws plan -input=false -out=release.tfplan -var-file="../../environments/aws/${{ inputs.environment }}.tfvars"
+      - name: Apply reviewed environment plan
+        if: ${{ inputs.apply }}
+        env:
+          TF_VAR_service_name: ${{ vars.LSK_SERVICE_NAME }}
+          TF_VAR_region: ${{ vars.AWS_REGION }}
+          TF_VAR_vpc_cidr: ${{ vars.AWS_VPC_CIDR }}
+          TF_VAR_image: ${{ inputs.image_digest }}
+          TF_VAR_certificate_arn: ${{ vars.AWS_ACM_CERTIFICATE_ARN }}
+          TF_VAR_allowed_ingress_cidrs: ${{ vars.AWS_ALLOWED_INGRESS_CIDRS_JSON }}
+          TF_VAR_oidc_issuer: ${{ vars.OIDC_ISSUER }}
+          TF_VAR_oidc_audience: ${{ vars.OIDC_AUDIENCE }}
+          TF_VAR_oidc_jwks_url: ${{ vars.OIDC_JWKS_URL }}
+          TF_VAR_tenant_region_policy: ${{ vars.TENANT_REGION_POLICY_JSON }}
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+        run: terraform -chdir=infra/aws apply -input=false release.tfplan
