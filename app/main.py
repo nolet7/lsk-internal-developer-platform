@@ -62,15 +62,15 @@ class AuditEvent(Base):
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 CATALOG = {
-    "cloud-run-api": {
+    "container-app-api": {
         "version": "1.0.0",
-        "description": "Containerized internal API on Cloud Run, workload identity and scaling limits",
-        "parameters": {"cpu": "1", "memory": "512Mi", "max_instances": 2},
-        "network": "identity-restricted",
+        "description": "Internal Azure Container Apps API on VNet with managed identity and private traffic",
+        "parameters": {"cpu": "0.5", "memory": "1Gi", "max_instances": 2},
+        "network": "internal-vnet",
     },
     "managed-postgres": {
         "version": "1.0.0",
-        "description": "Cloud SQL PostgreSQL plan with backups and review-required network policy",
+        "description": "Azure PostgreSQL Flexible Server with delegated private subnet, DNS and backup controls",
         "parameters": {"engine": "POSTGRES_16", "backup": True},
         "network": "private-connection-review",
     },
