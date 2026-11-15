@@ -59,6 +59,18 @@ jobs:
           TF_STATE_BUCKET: ${{ vars.AWS_TF_STATE_BUCKET }}
         run: |
           terraform -chdir=infra/aws init -input=false             -backend-config="bucket=$TF_STATE_BUCKET"             -backend-config="key=lsk/${{ github.event.repository.name }}/${{ inputs.environment }}.tfstate"             -backend-config="region=${{ vars.AWS_REGION }}"             -backend-config="use_lockfile=true"
+      - name: Approved migration and staging promotion gate
+        if: ${{ inputs.apply }}
+        env:
+          IMAGE_DIGEST: ${{ inputs.image_digest }}
+          MIGRATION_VERIFIED_DIGEST: ${{ vars.MIGRATION_VERIFIED_DIGEST }}
+          STAGING_VERIFIED_DIGEST: ${{ vars.STAGING_VERIFIED_DIGEST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          [[ -n "$MIGRATION_VERIFIED_DIGEST" && "$IMAGE_DIGEST" == "$MIGRATION_VERIFIED_DIGEST" ]] || { echo "Migration approval missing for exact image"; exit 1; }
+          if [[ "$ENVIRONMENT" == "prod" ]]; then
+            [[ -n "$STAGING_VERIFIED_DIGEST" && "$IMAGE_DIGEST" == "$STAGING_VERIFIED_DIGEST" ]] || { echo "Production requires same image verified in staging"; exit 1; }
+          fi
       - name: Plan private ECS + RDS release
         env:
           TF_VAR_service_name: ${{ vars.LSK_SERVICE_NAME }}
