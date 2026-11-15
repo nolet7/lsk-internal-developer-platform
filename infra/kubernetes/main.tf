@@ -42,5 +42,8 @@ module "kubernetes" {
 }
 output "cluster_name" { value = module.kubernetes.cluster_name }
 output "cluster_location" { value = module.kubernetes.cluster_location }
-output "private_endpoint" { value = module.kubernetes.cluster_endpoint_private sensitive = true }
+output "private_endpoint" {
+  value = module.kubernetes.cluster_endpoint_private
+  sensitive = true
+}
 output "network_id" { value = module.kubernetes.network_id }

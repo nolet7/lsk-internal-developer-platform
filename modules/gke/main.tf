@@ -138,7 +138,10 @@ resource "google_container_node_pool" "system" {
 
 output "cluster_name" { value = google_container_cluster.cluster.name }
 output "cluster_location" { value = google_container_cluster.cluster.location }
-output "cluster_endpoint_private" { value = google_container_cluster.cluster.private_cluster_config[0].private_endpoint sensitive = true }
+output "cluster_endpoint_private" {
+  value = google_container_cluster.cluster.private_cluster_config[0].private_endpoint
+  sensitive = true
+}
 output "network_id" { value = google_compute_network.cluster.id }
 output "subnet_id" { value = google_compute_subnetwork.nodes.id }
 output "workload_identity_pool" { value = "${var.project_id}.svc.id.goog" }
